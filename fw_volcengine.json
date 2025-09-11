@@ -1,0 +1,464 @@
+{
+  "id": "fw_volcengine",
+  "name": "云防火墙",
+  "description": "火山云云防火墙",
+  "type": "FIREWALL",
+  "implement": "PYTHON",
+  "main_module" : "fw_volcengine_app",
+  "version": "1.0",
+  "createTime" : "2024-01-03 09:45:57",
+  "vendor" : "火山云",
+  "virtualInstance": false,
+  "logo" : "fw_volcengine_logo.png",
+  "logoDark" : "fw_volcengine_logo_dark.png",
+  "configuration" : {
+    "ak": {
+      "name": "火山云用户ID",
+      "description": "xxxxxx",
+      "dataType": "STRING",
+      "order": 0,
+      "required": "true",
+      "render": "text"
+    },
+    "sk": {
+      "name": "火山云用户密钥",
+      "description": "xxxxxx",
+      "dataType": "PASSWORD",
+      "order": 0,
+      "required": "true",
+      "render": "text"
+    },
+    "endpoint": {
+      "name": "火山云服务域名",
+      "description": "xxxxxx",
+      "dataType": "STRING",
+      "order": 0,
+      "required": "true",
+      "render": "text"
+    },
+    "region": {
+      "name": "火山云服务地域",
+      "description": "xxxxxx",
+      "dataType": "STRING",
+      "order": 0,
+      "required": "true",
+      "render": "text"
+    },
+    "is_proxy": {
+      "name": "是否启用",
+      "dataType": "STRING",
+      "description": "代理",
+      "required": "false",
+      "render": "radio",
+      "dict": [
+        {
+          "id": "unProxy",
+          "key": "N",
+          "value": "否",
+          "seq": 1
+        },
+        {
+          "id": "Proxy",
+          "key": "Y",
+          "value": "是",
+          "seq": 2
+        }
+      ],
+      "defaultValue": "N"
+    },
+    "proxy_type": {
+      "name": "代理类型",
+      "description": "代理",
+      "dataType": "STRING",
+      "order": 0,
+      "required": "false",
+      "render": "text",
+      "defaultValue": "http"
+    },
+    "proxy_host": {
+      "name": "代理地址",
+      "description": "代理地址或者域名",
+      "dataType": "STRING",
+      "order": 0,
+      "required": "false",
+      "render": "text"
+    },
+    "proxy_port": {
+      "name": "代理端口",
+      "description": "代理端口",
+      "dataType": "STRING",
+      "order": 0,
+      "required": "false",
+      "render": "text"
+    }
+  },
+  "actions": [
+   {
+      "name": "连通性测试",
+      "id": "test_connectivity",
+      "description": "连通性测试",
+      "type": "test",
+      "parameters": {}
+    },
+    {
+      "name": "创建资源地址组",
+      "id": "AddAddressBook",
+      "description": "创建资源地址组",
+      "type": "generic",
+      "parameters": {
+        "groupname": {
+          "name": "地址组名",
+          "description": "需要创建的地址组名",
+          "dataType": "STRING",
+          "order": 0,
+          "required": "true"
+        },
+        "grouptype": {
+          "name": "组别类型",
+          "description": "需要创建的地址组类型",
+          "dataType": "STRING",
+          "order": 0,
+          "required": "true"
+        },
+        "description": {
+          "name": "组别描述",
+          "description": "需要创建的地址组描述",
+          "dataType": "STRING",
+          "order": 0,
+          "required": "true"
+        },
+        "addresslist": {
+          "name": "资源参数",
+          "description": "需要创建的IP、域名",
+          "dataType": "STRING",
+          "order": 0,
+          "required": "true"
+        }
+      }
+    },
+    {
+      "name": "删除资源地址组",
+      "id": "DeleteAddressBook",
+      "description": "删除资源地址组",
+      "type": "generic",
+      "parameters": {
+        "groupuuid": {
+          "name": "地址组ID",
+          "description": "需要删除的地址组ID",
+          "dataType": "STRING",
+          "order": 0,
+          "required": "true"
+        }
+      }
+    },
+    {
+      "name": "查询资源地址组",
+      "id": "DescribeAddressBook",
+      "description": "查询资源地址组",
+      "type": "generic",
+      "parameters": {
+        "query": {
+          "name": "搜索条件",
+          "description": "需要查询的搜索条件",
+          "dataType": "STRING",
+          "order": 0,
+          "required": "true"
+        },
+        "grouptype": {
+          "name": "资源组类型",
+          "description": "需要查询的搜索条件",
+          "dataType": "STRING",
+          "order": 0,
+          "required": "true"
+        }
+      }
+    },
+    {
+      "name": "修改资源地址组",
+      "id": "ModifyAddressBook",
+      "description": "修改资源地址组",
+      "type": "generic",
+      "parameters": {
+        "groupname": {
+          "name": "地址组名",
+          "description": "需要修改的地址组名",
+          "dataType": "STRING",
+          "order": 0,
+          "required": "true"
+        },
+        "groupuuid": {
+          "name": "地址组ID",
+          "description": "需要修改的地址组ID",
+          "dataType": "STRING",
+          "order": 0,
+          "required": "true"
+        },
+        "description": {
+          "name": "组别描述",
+          "description": "需要修改的地址组描述",
+          "dataType": "STRING",
+          "order": 0,
+          "required": "true"
+        },
+        "addresslist": {
+          "name": "资源参数",
+          "description": "需要修改的IP、域名",
+          "dataType": "STRING",
+          "order": 0,
+          "required": "true"
+        }
+      }
+    },
+    {
+      "name": "创建控制策略组",
+      "id": "AddControlPolicy",
+      "description": "创建控制策略组",
+      "type": "generic",
+      "parameters": {
+        "prio": {
+          "name": "策略优先级",
+          "description": "需要创建的策略优先级",
+          "dataType": "STRING",
+          "order": 0,
+          "required": "true"
+        },
+        "direction": {
+          "name": "流量方向",
+          "description": "需要创建的流量方向",
+          "dataType": "STRING",
+          "order": 0,
+          "required": "true"
+        },
+        "sourcetype": {
+          "name": "来源类型",
+          "description": "需要创建的来源类型",
+          "dataType": "STRING",
+          "order": 0,
+          "required": "true"
+        },
+        "source": {
+          "name": "来源地址",
+          "description": "需要创建的来源地址",
+          "dataType": "STRING",
+          "order": 0,
+          "required": "true"
+        },
+        "sourcetypegrouptype": {
+          "name": "来源组类型",
+          "description": "需要创建的来源组类型",
+          "dataType": "STRING",
+          "order": 0,
+          "required": "true"
+        },
+        "destinationtype": {
+          "name": "目的类型",
+          "description": "需要创建的目的类型",
+          "dataType": "STRING",
+          "order": 0,
+          "required": "true"
+        },
+        "destination": {
+          "name": "目的地址",
+          "description": "需要创建的目的地址",
+          "dataType": "STRING",
+          "order": 0,
+          "required": "true"
+        },
+        "destinationgrouptype": {
+          "name": "目的组类型",
+          "description": "需要创建的目的组类型",
+          "dataType": "STRING",
+          "order": 0,
+          "required": "true"
+        },
+        "proto": {
+          "name": "协议类型",
+          "description": "需要创建的协议类型",
+          "dataType": "STRING",
+          "order": 0,
+          "required": "true"
+        },
+        "action": {
+          "name": "策略动作",
+          "description": "需要创建的策略动作",
+          "dataType": "STRING",
+          "order": 0,
+          "required": "true"
+        },
+        "description": {
+          "name": "策略描述",
+          "description": "需要创建的策略描述",
+          "dataType": "STRING",
+          "order": 0,
+          "required": "true"
+        }
+      }
+    },
+    {
+      "name": "删除策略控制组",
+      "id": "DeleteControlPolicy",
+      "description": "删除策略控制组",
+      "type": "generic",
+      "parameters": {
+        "ruleid": {
+          "name": "策略组ID",
+          "description": "需要删除的策略组ID",
+          "dataType": "STRING",
+          "order": 0,
+          "required": "true"
+        },
+        "direction": {
+          "name": "流量方向",
+          "description": "需要删除的流量方向",
+          "dataType": "STRING",
+          "order": 0,
+          "required": "true"
+        }
+      }
+    },
+    {
+      "name": "查询控制策略组",
+      "id": "DescribeControlPolicy",
+      "description": "查询控制策略组",
+      "type": "generic",
+      "parameters": {
+        "direction": {
+          "name": "流量方向",
+          "description": "需要查询的流量方向",
+          "dataType": "STRING",
+          "order": 0,
+          "required": "true"
+        }
+      }
+    },
+    {
+      "name": "修改控制策略组",
+      "id": "ModifyControlPolicy",
+      "description": "修改控制策略组",
+      "type": "generic",
+      "parameters": {
+        "ruleid": {
+          "name": "策略组ID",
+          "description": "需要修改的策略组ID",
+          "dataType": "STRING",
+          "order": 0,
+          "required": "true"
+        },
+        "direction": {
+          "name": "流量方向",
+          "description": "需要修改的流量方向",
+          "dataType": "STRING",
+          "order": 0,
+          "required": "true"
+        },
+        "sourcetype": {
+          "name": "来源类型",
+          "description": "需要修改的来源类型",
+          "dataType": "STRING",
+          "order": 0,
+          "required": "true"
+        },
+        "source": {
+          "name": "来源地址",
+          "description": "需要修改的来源地址",
+          "dataType": "STRING",
+          "order": 0,
+          "required": "true"
+        },
+        "sourcetypegrouptype": {
+          "name": "来源组类型",
+          "description": "需要创建的来源组类型",
+          "dataType": "STRING",
+          "order": 0,
+          "required": "true"
+        },
+        "destinationtype": {
+          "name": "目的类型",
+          "description": "需要修改的目的类型",
+          "dataType": "STRING",
+          "order": 0,
+          "required": "true"
+        },
+        "destination": {
+          "name": "目的地址",
+          "description": "需要修改的目的地址",
+          "dataType": "STRING",
+          "order": 0,
+          "required": "true"
+        },
+        "destinationgrouptype": {
+          "name": "目的组类型",
+          "description": "需要创建的目的组类型",
+          "dataType": "STRING",
+          "order": 0,
+          "required": "true"
+        },
+        "proto": {
+          "name": "协议类型",
+          "description": "需要修改的协议类型",
+          "dataType": "STRING",
+          "order": 0,
+          "required": "true"
+        },
+        "action": {
+          "name": "策略动作",
+          "description": "需要修改的策略动作",
+          "dataType": "STRING",
+          "order": 0,
+          "required": "true"
+        },
+        "description": {
+          "name": "策略描述",
+          "description": "需要修改的策略描述",
+          "dataType": "STRING",
+          "order": 0,
+          "required": "true"
+        }
+      }
+    },
+    {
+      "name": "执行封禁任务",
+      "id": "SingleBlockAddress",
+      "description": "执行封禁任务",
+      "type": "generic",
+      "parameters": {
+        "addr": {
+          "name": "资源地址",
+          "description": "需要封禁的资源地址",
+          "dataType": "STRING",
+          "order": 0,
+          "required": "true"
+        },
+        "direction": {
+          "name": "流量方向",
+          "description": "需要封禁的流量方向",
+          "dataType": "STRING",
+          "order": 0,
+          "required": "true"
+        }
+      }
+    },
+    {
+      "name": "执行解封任务",
+      "id": "SingleUnblockAddress",
+      "description": "执行解封任务",
+      "type": "generic",
+      "parameters": {
+        "addr": {
+          "name": "资源地址",
+          "description": "需要解封的资源地址",
+          "dataType": "STRING",
+          "order": 0,
+          "required": "true"
+        },
+        "direction": {
+          "name": "流量方向",
+          "description": "需要解封的流量方向",
+          "dataType": "STRING",
+          "order": 0,
+          "required": "true"
+        }
+      }
+    }
+  ]
+}
