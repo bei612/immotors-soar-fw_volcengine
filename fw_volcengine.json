@@ -23,8 +23,8 @@
     "sk": {
       "name": "火山云用户密钥",
       "description": "xxxxxx",
-      "dataType": "PASSWORD",
-      "order": 0,
+      "dataType": "STRING",
+      "order": 1,
       "required": "true",
       "render": "text"
     },
@@ -32,7 +32,7 @@
       "name": "火山云服务域名",
       "description": "xxxxxx",
       "dataType": "STRING",
-      "order": 0,
+      "order": 2,
       "required": "true",
       "render": "text"
     },
@@ -40,56 +40,18 @@
       "name": "火山云服务地域",
       "description": "xxxxxx",
       "dataType": "STRING",
-      "order": 0,
+      "order": 3,
       "required": "true",
       "render": "text"
     },
-    "is_proxy": {
-      "name": "是否启用",
-      "dataType": "STRING",
-      "description": "代理",
-      "required": "false",
-      "render": "radio",
-      "dict": [
-        {
-          "id": "unProxy",
-          "key": "N",
-          "value": "否",
-          "seq": 1
-        },
-        {
-          "id": "Proxy",
-          "key": "Y",
-          "value": "是",
-          "seq": 2
-        }
-      ],
-      "defaultValue": "N"
-    },
-    "proxy_type": {
-      "name": "代理类型",
-      "description": "代理",
-      "dataType": "STRING",
-      "order": 0,
-      "required": "false",
-      "render": "text",
-      "defaultValue": "http"
-    },
-    "proxy_host": {
+    "proxy_url": {
       "name": "代理地址",
-      "description": "代理地址或者域名",
+      "description": "代理地址，支持格式：协议://[用户名:密码@]地址:端口，如：http://proxy.example.com:8080 或 socks5://user:pass@proxy.example.com:1080，留空表示不使用代理",
       "dataType": "STRING",
-      "order": 0,
-      "required": "false",
-      "render": "text"
-    },
-    "proxy_port": {
-      "name": "代理端口",
-      "description": "代理端口",
-      "dataType": "STRING",
-      "order": 0,
-      "required": "false",
-      "render": "text"
+      "order": 4,
+      "required": false,
+      "render": "text",
+      "placeholder": "http://proxy.example.com:8080"
     }
   },
   "actions": [
@@ -215,70 +177,7 @@
       "description": "创建控制策略组",
       "type": "generic",
       "parameters": {
-        "prio": {
-          "name": "策略优先级",
-          "description": "需要创建的策略优先级",
-          "dataType": "STRING",
-          "order": 0,
-          "required": "true"
-        },
-        "direction": {
-          "name": "流量方向",
-          "description": "需要创建的流量方向",
-          "dataType": "STRING",
-          "order": 0,
-          "required": "true"
-        },
-        "sourcetype": {
-          "name": "来源类型",
-          "description": "需要创建的来源类型",
-          "dataType": "STRING",
-          "order": 0,
-          "required": "true"
-        },
-        "source": {
-          "name": "来源地址",
-          "description": "需要创建的来源地址",
-          "dataType": "STRING",
-          "order": 0,
-          "required": "true"
-        },
-        "sourcetypegrouptype": {
-          "name": "来源组类型",
-          "description": "需要创建的来源组类型",
-          "dataType": "STRING",
-          "order": 0,
-          "required": "true"
-        },
-        "destinationtype": {
-          "name": "目的类型",
-          "description": "需要创建的目的类型",
-          "dataType": "STRING",
-          "order": 0,
-          "required": "true"
-        },
-        "destination": {
-          "name": "目的地址",
-          "description": "需要创建的目的地址",
-          "dataType": "STRING",
-          "order": 0,
-          "required": "true"
-        },
-        "destinationgrouptype": {
-          "name": "目的组类型",
-          "description": "需要创建的目的组类型",
-          "dataType": "STRING",
-          "order": 0,
-          "required": "true"
-        },
-        "proto": {
-          "name": "协议类型",
-          "description": "需要创建的协议类型",
-          "dataType": "STRING",
-          "order": 0,
-          "required": "true"
-        },
-        "action": {
+        "aclaction": {
           "name": "策略动作",
           "description": "需要创建的策略动作",
           "dataType": "STRING",
@@ -289,8 +188,78 @@
           "name": "策略描述",
           "description": "需要创建的策略描述",
           "dataType": "STRING",
-          "order": 0,
+          "order": 1,
           "required": "true"
+        },
+        "destination": {
+          "name": "目的地址",
+          "description": "需要创建的目的地址",
+          "dataType": "STRING",
+          "order": 2,
+          "required": "true"
+        },
+        "destinationtype": {
+          "name": "目的类型",
+          "description": "需要创建的目的类型",
+          "dataType": "STRING",
+          "order": 3,
+          "required": "true"
+        },
+        "direction": {
+          "name": "流量方向",
+          "description": "需要创建的流量方向",
+          "dataType": "STRING",
+          "order": 4,
+          "required": "true"
+        },
+        "proto": {
+          "name": "协议类型",
+          "description": "需要创建的协议类型",
+          "dataType": "STRING",
+          "order": 5,
+          "required": "true"
+        },
+        "source": {
+          "name": "来源地址",
+          "description": "需要创建的来源地址",
+          "dataType": "STRING",
+          "order": 6,
+          "required": "true"
+        },
+        "sourcetype": {
+          "name": "来源类型",
+          "description": "需要创建的来源类型",
+          "dataType": "STRING",
+          "order": 7,
+          "required": "true"
+        },
+        "neworder": {
+          "name": "策略优先级",
+          "description": "需要创建的策略优先级",
+          "dataType": "STRING",
+          "order": 8,
+          "required": "true"
+        },
+        "applicationname": {
+          "name": "应用名称",
+          "description": "需要创建的应用名称",
+          "dataType": "STRING",
+          "order": 9,
+          "required": false
+        },
+        "applicationnamelist": {
+          "name": "应用名称列表",
+          "description": "需要创建的应用名称列表",
+          "dataType": "STRING",
+          "order": 10,
+          "required": false
+        },
+        "domainresolvetype": {
+          "name": "域名解析类型",
+          "description": "需要创建的域名解析类型",
+          "dataType": "STRING",
+          "order": 11,
+          "required": false
         }
       }
     },
@@ -300,7 +269,7 @@
       "description": "删除策略控制组",
       "type": "generic",
       "parameters": {
-        "ruleid": {
+        "acluuid": {
           "name": "策略组ID",
           "description": "需要删除的策略组ID",
           "dataType": "STRING",
@@ -311,7 +280,7 @@
           "name": "流量方向",
           "description": "需要删除的流量方向",
           "dataType": "STRING",
-          "order": 0,
+          "order": 1,
           "required": "true"
         }
       }
@@ -332,130 +301,45 @@
       }
     },
     {
-      "name": "修改控制策略组",
-      "id": "ModifyControlPolicy",
-      "description": "修改控制策略组",
+      "name": "批量封禁任务",
+      "id": "AutoBlockTask",
+      "description": "批量封禁IP地址",
       "type": "generic",
       "parameters": {
-        "ruleid": {
-          "name": "策略组ID",
-          "description": "需要修改的策略组ID",
+        "addr": {
+          "name": "IP地址列表",
+          "description": "需要封禁的IP地址列表，支持多种分隔符（逗号、分号、换行等）",
           "dataType": "STRING",
           "order": 0,
           "required": "true"
         },
         "direction": {
           "name": "流量方向",
-          "description": "需要修改的流量方向",
+          "description": "需要封禁的流量方向（in/out）",
           "dataType": "STRING",
-          "order": 0,
-          "required": "true"
-        },
-        "sourcetype": {
-          "name": "来源类型",
-          "description": "需要修改的来源类型",
-          "dataType": "STRING",
-          "order": 0,
-          "required": "true"
-        },
-        "source": {
-          "name": "来源地址",
-          "description": "需要修改的来源地址",
-          "dataType": "STRING",
-          "order": 0,
-          "required": "true"
-        },
-        "sourcetypegrouptype": {
-          "name": "来源组类型",
-          "description": "需要创建的来源组类型",
-          "dataType": "STRING",
-          "order": 0,
-          "required": "true"
-        },
-        "destinationtype": {
-          "name": "目的类型",
-          "description": "需要修改的目的类型",
-          "dataType": "STRING",
-          "order": 0,
-          "required": "true"
-        },
-        "destination": {
-          "name": "目的地址",
-          "description": "需要修改的目的地址",
-          "dataType": "STRING",
-          "order": 0,
-          "required": "true"
-        },
-        "destinationgrouptype": {
-          "name": "目的组类型",
-          "description": "需要创建的目的组类型",
-          "dataType": "STRING",
-          "order": 0,
-          "required": "true"
-        },
-        "proto": {
-          "name": "协议类型",
-          "description": "需要修改的协议类型",
-          "dataType": "STRING",
-          "order": 0,
-          "required": "true"
-        },
-        "action": {
-          "name": "策略动作",
-          "description": "需要修改的策略动作",
-          "dataType": "STRING",
-          "order": 0,
-          "required": "true"
-        },
-        "description": {
-          "name": "策略描述",
-          "description": "需要修改的策略描述",
-          "dataType": "STRING",
-          "order": 0,
+          "order": 1,
           "required": "true"
         }
       }
     },
     {
-      "name": "执行封禁任务",
-      "id": "SingleBlockAddress",
-      "description": "执行封禁任务",
+      "name": "批量解封任务",
+      "id": "AutoUnblockTask",
+      "description": "批量解封IP地址",
       "type": "generic",
       "parameters": {
         "addr": {
-          "name": "资源地址",
-          "description": "需要封禁的资源地址",
+          "name": "IP地址列表",
+          "description": "需要解封的IP地址列表，支持多种分隔符（逗号、分号、换行等）",
           "dataType": "STRING",
           "order": 0,
           "required": "true"
         },
         "direction": {
           "name": "流量方向",
-          "description": "需要封禁的流量方向",
+          "description": "需要解封的流量方向（in/out）",
           "dataType": "STRING",
-          "order": 0,
-          "required": "true"
-        }
-      }
-    },
-    {
-      "name": "执行解封任务",
-      "id": "SingleUnblockAddress",
-      "description": "执行解封任务",
-      "type": "generic",
-      "parameters": {
-        "addr": {
-          "name": "资源地址",
-          "description": "需要解封的资源地址",
-          "dataType": "STRING",
-          "order": 0,
-          "required": "true"
-        },
-        "direction": {
-          "name": "流量方向",
-          "description": "需要解封的流量方向",
-          "dataType": "STRING",
-          "order": 0,
+          "order": 1,
           "required": "true"
         }
       }

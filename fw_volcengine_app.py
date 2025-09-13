@@ -5,23 +5,27 @@ from cbt.base_app import BaseApp
 from cbt.action_result import ActionResult
 import cbt.status as cbt_status
 from apps.fw_volcengine.FwVolcengineApp import FwVolcengineApp
+from loguru import logger
+import os
+import ipaddress
+import re
 
 class App(BaseApp):
+
     def initialize(self, asset_config):
         self.ak = asset_config.get('ak')
         self.sk = asset_config.get('sk')
         self.endpoint = asset_config.get('endpoint')
         self.region = asset_config.get('region')
-        is_proxy = asset_config.get("is_proxy")
-        proxy_type = asset_config.get("proxy_type")
-        proxy_host = asset_config.get("proxy_host")
-        proxy_port = asset_config.get("proxy_port")
-        proxy = "{0}://{1}:{2}".format(proxy_type, proxy_host, proxy_port)
-        if is_proxy == "Y":
-            if proxy_type == "http":
-                self.proxies = proxy
-            elif proxy_type == "https":
-                self.proxies = proxy
+        self.proxy_url = asset_config.get('proxy_url', '')
+        self.proxy_user = asset_config.get('proxy_user', '')
+        self.proxy_pass = asset_config.get('proxy_pass', '')
+        if re.match(r'(http|https|socks5)://[\w\.]+:\d+', self.proxy_url):
+            if self.proxy_user == '' or self.proxy_pass == '':
+                self.proxies = self.proxy_url
+            else:
+                scheme = self.proxy_url.split('://')
+                self.proxies = f"{scheme[0]}://{self.proxy_user}:{self.proxy_pass}@{scheme[1]}"
         else:
             self.proxies = None
         return cbt_status.APP_SUCCESS
@@ -30,8 +34,8 @@ class App(BaseApp):
         pass
 
     def handle_action(self, action_id, params, action_context):
-        # action_id 动作ip，数据类型string
-        # params 动作参数，数据类型dict
+        # action_id 动作ID
+        # params 动作参数
         # action_context 动作上下文
         result = ActionResult()
         # 脚本调用的接口
@@ -52,10 +56,16 @@ class App(BaseApp):
         return result
         
     def test_connectivity(self):
-        # 连通性测
+        # 连通性测试
         # return: True or False
-        # TODO 自己实现联通性测试的逻辑
-        return True
+        try:
+            app = FwVolcengineApp(ak=self.ak, sk=self.sk, endpoint=self.endpoint, region=self.region, proxies=self.proxies)
+            # 查询地址簿验证连通性
+            app.describe_address_book("", "ip")
+            return True
+        except Exception as e:
+            logger.error(f"连通性测试失败: {e}")
+            return False
 
     def AddAddressBook(self, params):
         groupname = params.get("groupname")
@@ -88,61 +98,49 @@ class App(BaseApp):
         res = modifyaddressbookobj.modify_address_book(groupname, groupuuid, description, addresslist)
         return res
 
-    def AddControlPolicy(self, params):
-        prio = params.get("prio")
-        direction = params.get("direction")
-        sourcetype = params.get("sourcetype")
-        source = params.get("source")
-        sourcetypegrouptype = params.get("sourcetypegrouptype")
-        destinationtype = params.get("destinationtype")
-        destination = params.get("destination")
-        destinationgrouptype = params.get("destinationgrouptype")
-        proto = params.get("proto")
-        action = params.get("action")
-        description = params.get("description")
-        addcontrolpolicyobj = FwVolcengineApp(ak=self.ak, sk=self.sk, endpoint=self.endpoint, region=self.region, proxies=self.proxies)
-        res = addcontrolpolicyobj.add_control_policy(prio, direction, sourcetype, source, sourcetypegrouptype, destinationtype, destination, destinationgrouptype, proto, action, description)
-        return res
-
-    def DeleteControlPolicy(self, params):
-        ruleid = params.get("ruleid")
-        direction = params.get("direction")
-        deletecontrolpolicyobj = FwVolcengineApp(ak=self.ak, sk=self.sk, endpoint=self.endpoint, region=self.region, proxies=self.proxies)
-        res = deletecontrolpolicyobj.delete_control_policy(ruleid, direction)
-        return res
-
     def DescribeControlPolicy(self, params):
         direction = params.get("direction")
         describecontrolpolicyobj = FwVolcengineApp(ak=self.ak, sk=self.sk, endpoint=self.endpoint, region=self.region, proxies=self.proxies)
         res = describecontrolpolicyobj.describe_control_policy(direction)
         return res
 
-    def ModifyControlPolicy(self, params):
-        ruleid = params.get("ruleid")
-        direction = params.get("direction")
-        sourcetype = params.get("sourcetype")
-        source = params.get("source")
-        sourcetypegrouptype = params.get("sourcetypegrouptype")
-        destinationtype = params.get("destinationtype")
-        destination = params.get("destination")
-        destinationgrouptype = params.get("destinationgrouptype")
-        proto = params.get("proto")
-        action = params.get("action")
+    def AddControlPolicy(self, params):
+        aclaction = params.get("aclaction")
         description = params.get("description")
-        modifycontrolpolicyobj = FwVolcengineApp(ak=self.ak, sk=self.sk, endpoint=self.endpoint, region=self.region, proxies=self.proxies)
-        res = modifycontrolpolicyobj.modify_control_policy(ruleid, direction, sourcetype, source, sourcetypegrouptype, destinationtype, destination, destinationgrouptype, proto, action, description)
+        destination = params.get("destination")
+        destinationtype = params.get("destinationtype")
+        direction = params.get("direction")
+        proto = params.get("proto")
+        source = params.get("source")
+        sourcetype = params.get("sourcetype")
+        neworder = params.get("neworder")
+        applicationname = params.get("applicationname")
+        applicationnamelist = params.get("applicationnamelist")
+        domainresolvetype = params.get("domainresolvetype")
+        addcontrolpolicyobj = FwVolcengineApp(ak=self.ak, sk=self.sk, endpoint=self.endpoint, region=self.region, proxies=self.proxies)
+        res = addcontrolpolicyobj.add_control_policy(aclaction, description, destination, destinationtype, direction, proto, source, sourcetype, neworder, applicationname, applicationnamelist, domainresolvetype)
         return res
 
-    def SingleBlockAddress(self, params):
-        addr = params.get("addr")
+    def DeleteControlPolicy(self, params):
+        acluuid = params.get("acluuid")
         direction = params.get("direction")
-        singleblockaddressobj = FwVolcengineApp(ak=self.ak, sk=self.sk, endpoint=self.endpoint, region=self.region, proxies=self.proxies)
-        res = singleblockaddressobj.single_block_address(addr, direction)
+        deletecontrolpolicyobj = FwVolcengineApp(ak=self.ak, sk=self.sk, endpoint=self.endpoint, region=self.region, proxies=self.proxies)
+        res = deletecontrolpolicyobj.delete_control_policy(acluuid, direction)
         return res
 
-    def SingleUnblockAddress(self, params):
+
+    def AutoBlockTask(self, params):
+        """批量封禁IP地址"""
         addr = params.get("addr")
         direction = params.get("direction")
-        singleunblockaddressobj = FwVolcengineApp(ak=self.ak, sk=self.sk, endpoint=self.endpoint, region=self.region, proxies=self.proxies)
-        res = singleunblockaddressobj.single_unblock_address(addr, direction)
+        autoblockobj = FwVolcengineApp(ak=self.ak, sk=self.sk, endpoint=self.endpoint, region=self.region, proxies=self.proxies)
+        res = autoblockobj.auto_block_task(addr, direction)
+        return res
+
+    def AutoUnblockTask(self, params):
+        """批量解封IP地址"""
+        addr = params.get("addr")
+        direction = params.get("direction")
+        autounblockobj = FwVolcengineApp(ak=self.ak, sk=self.sk, endpoint=self.endpoint, region=self.region, proxies=self.proxies)
+        res = autounblockobj.auto_unblock_task(addr, direction)
         return res
