@@ -22,7 +22,7 @@ class FwVolcengineApp:
         configuration = volcenginesdkcore.Configuration()
         configuration.ak = self.ak
         configuration.sk = self.sk
-        configuration.region = self.region
+        configuration.region = self.region # 这个参数必须有
         configuration.client_side_validation = True
         configuration.host = self.endpoint
         if self.proxies:
@@ -281,6 +281,7 @@ class FwVolcengineApp:
         except Exception as e:
             logger.error(f'{e}')
             return str(e)
+
 
     def auto_block_task(self, addr, direction=None):
         # 加载日志配置
