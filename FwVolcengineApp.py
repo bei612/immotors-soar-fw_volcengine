@@ -46,7 +46,9 @@ class FwVolcengineApp:
             description=description,
             address_list=addresslist
         )
-        utils.check_os_type()
+        # 获取实例名（如果在CBT框架中运行）
+        instance_name = getattr(self, 'asset', None) and getattr(self.asset, 'name', None)
+        utils.check_os_type(instance_name)
         try:
             resp, status, headers = client.add_address_book_with_http_info(request, _return_http_data_only=False)
             data = resp.to_dict()
@@ -91,7 +93,9 @@ class FwVolcengineApp:
         request = volcenginesdkfwcenter.DeleteAddressBookRequest(
             group_uuid=groupuuid
         )
-        utils.check_os_type()
+        # 获取实例名（如果在CBT框架中运行）
+        instance_name = getattr(self, 'asset', None) and getattr(self.asset, 'name', None)
+        utils.check_os_type(instance_name)
         try:
             resp, status, headers = client.delete_address_book_with_http_info(request, _return_http_data_only=False)
             logger.info(f'删除地址簿成功: {groupuuid}')
@@ -112,7 +116,9 @@ class FwVolcengineApp:
             page_number=utils.get_config('describe_address_book.page_number', 1),
             page_size=utils.get_config('describe_address_book.page_size', 500)
         )
-        utils.check_os_type()
+        # 获取实例名（如果在CBT框架中运行）
+        instance_name = getattr(self, 'asset', None) and getattr(self.asset, 'name', None)
+        utils.check_os_type(instance_name)
         try:
             resp, status, headers = client.describe_address_book_with_http_info(request, _return_http_data_only=False)
             data = resp.to_dict()
@@ -158,7 +164,9 @@ class FwVolcengineApp:
             description=description,
             address_list=addresslist
         )
-        utils.check_os_type()
+        # 获取实例名（如果在CBT框架中运行）
+        instance_name = getattr(self, 'asset', None) and getattr(self.asset, 'name', None)
+        utils.check_os_type(instance_name)
         try:
             resp, status, headers = client.modify_address_book_with_http_info(request, _return_http_data_only=False)
             logger.info(f'{resp}')
@@ -183,7 +191,9 @@ class FwVolcengineApp:
             request_params['description'] = description
             
         request = volcenginesdkfwcenter.DescribeControlPolicyRequest(**request_params)
-        utils.check_os_type()
+        # 获取实例名（如果在CBT框架中运行）
+        instance_name = getattr(self, 'asset', None) and getattr(self.asset, 'name', None)
+        utils.check_os_type(instance_name)
         try:
             resp, status, headers = client.describe_control_policy_with_http_info(request, _return_http_data_only=False)
             data = resp.to_dict()
@@ -242,7 +252,9 @@ class FwVolcengineApp:
             description=description,
             status=utils.get_config('add_control_policy.status', True)
         )
-        utils.check_os_type()
+        # 获取实例名（如果在CBT框架中运行）
+        instance_name = getattr(self, 'asset', None) and getattr(self.asset, 'name', None)
+        utils.check_os_type(instance_name)
         try:
             resp, status, headers = client.add_control_policy_with_http_info(request, _return_http_data_only=False)
             data = resp.to_dict()
@@ -269,7 +281,9 @@ class FwVolcengineApp:
             rule_id=acluuid,
             direction=direction
         )
-        utils.check_os_type()
+        # 获取实例名（如果在CBT框架中运行）
+        instance_name = getattr(self, 'asset', None) and getattr(self.asset, 'name', None)
+        utils.check_os_type(instance_name)
         try:
             resp, status, headers = client.delete_control_policy_with_http_info(request, _return_http_data_only=False)
             logger.info(f'{resp}')
@@ -284,8 +298,9 @@ class FwVolcengineApp:
 
 
     def auto_block_task(self, addr, direction=None):
-        # 加载日志配置
-        utils.check_os_type()
+        # 加载日志配置（支持实例名）
+        instance_name = getattr(self, 'asset', None) and getattr(self.asset, 'name', None)
+        utils.check_os_type(instance_name)
         
         # 验证direction参数
         if direction not in ['in', 'out']:
@@ -299,12 +314,17 @@ class FwVolcengineApp:
         # 验证SOAR入参IP（单个IP） or 手动入参IPS（多个IP）
         addrs = utils.parse_ip_list(addr)
         if not addrs:
-            msg = {
-                "addr": f"{addrs}",
-                "desc": "无需封禁"
+            return {
+                "statusCode": 400,
+                "error": "没有有效的IP地址",
+                "body": {
+                    "total_ips": 0,
+                    "success_count": 0,
+                    "failed_count": 0,
+                    "existed_count": 0,
+                    "results": []
+                }
             }
-            logger.info(f'{msg}')
-            return msg
         
         """ 初始化处理状态变量定义及初始化 """
         # 其中任何一个需要封禁的ip同一时间值可以位于4个列表 list_remain_addrs list_success_addrs list_failed_addrs list_existed_addrs 中的一个
@@ -596,13 +616,38 @@ class FwVolcengineApp:
             else:
                 # 如果本轮循环处理了IP，则将连续处理失败次数归零
                 consecutive_failures = 0
-        msg = list_success_addrs + list_failed_addrs + list_existed_addrs
-        logger.info(f"{msg}")
-        return msg
+        # 组装统一的返回结果格式
+        all_results = list_success_addrs + list_failed_addrs + list_existed_addrs
+        
+        if list_success_addrs:
+            return {
+                "statusCode": 200,
+                "message": f"成功将 {len(list_success_addrs)} 个IP添加到火山云防火墙封禁列表",
+                "body": {
+                    "total_ips": len(addrs),
+                    "success_count": len(list_success_addrs),
+                    "failed_count": len(list_failed_addrs),
+                    "existed_count": len(list_existed_addrs),
+                    "results": all_results
+                }
+            }
+        else:
+            return {
+                "statusCode": 400,
+                "error": "所有IP都无法添加到火山云防火墙封禁列表",
+                "body": {
+                    "total_ips": len(addrs),
+                    "success_count": len(list_success_addrs),
+                    "failed_count": len(list_failed_addrs),
+                    "existed_count": len(list_existed_addrs),
+                    "results": all_results
+                }
+            }
 
     def auto_unblock_task(self, addr, direction=None):
-        # 加载日志配置
-        utils.check_os_type()
+        # 加载日志配置（支持实例名）
+        instance_name = getattr(self, 'asset', None) and getattr(self.asset, 'name', None)
+        utils.check_os_type(instance_name)
         
         # 验证direction参数
         if direction not in ['in', 'out']:
@@ -616,12 +661,16 @@ class FwVolcengineApp:
         # 验证SOAR入参IP（单个IP） or 手动入参IPS（多个IP）
         addrs = utils.parse_ip_list(addr)
         if not addrs:
-            msg = {
-                "addr": f"{addrs}",
-                "desc": "无需解封"
+            return {
+                "statusCode": 400,
+                "error": "没有有效的IP地址",
+                "body": {
+                    "total_ips": 0,
+                    "success_count": 0,
+                    "failed_count": 0,
+                    "results": []
+                }
             }
-            logger.info(f'{msg}')
-            return msg
         
         """ 初始化处理状态变量定义及初始化 """
         list_success_addrs = []
@@ -816,6 +865,28 @@ class FwVolcengineApp:
             else:
                 consecutive_failures = 0
         
-        msg = list_success_addrs + list_failed_addrs
-        logger.info(f"{msg}")
-        return msg
+        # 组装统一的返回结果格式
+        all_results = list_success_addrs + list_failed_addrs
+        
+        if list_success_addrs:
+            return {
+                "statusCode": 200,
+                "message": f"成功从火山云防火墙封禁列表中移除 {len(list_success_addrs)} 个IP",
+                "body": {
+                    "total_ips": len(addrs),
+                    "success_count": len(list_success_addrs),
+                    "failed_count": len(list_failed_addrs),
+                    "results": all_results
+                }
+            }
+        else:
+            return {
+                "statusCode": 400,
+                "error": "没有找到需要移除的IP",
+                "body": {
+                    "total_ips": len(addrs),
+                    "success_count": len(list_success_addrs),
+                    "failed_count": len(list_failed_addrs),
+                    "results": all_results
+                }
+            }

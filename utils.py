@@ -3,20 +3,58 @@
 火山云云防火墙工具类
 """
 
-import os, ipaddress, yaml
+import os, ipaddress, yaml, platform
 from loguru import logger
 
-def check_os_type():
-    """检查系统类型并配置日志"""
-    sysname = os.uname().sysname
+def check_os_type(instance_name=None):
+    """检查系统类型并配置日志
+    
+    Args:
+        instance_name: 应用实例名称，用于区分不同实例的日志文件
+    """
+    sysname = platform.system().lower()
     logs_path = os.path.dirname(os.path.dirname(os.path.dirname(__file__))) + "/logs"
-    file_name = os.path.splitext(os.path.basename(__file__))[0].lower()
+    
+    # 获取应用ID（从文件路径中提取）
+    app_id = os.path.basename(os.path.dirname(__file__))
+    
+    # 构建日志文件名：app_id_实例名.log
+    if instance_name:
+        # 清理实例名：转换为小写，替换特殊字符为下划线
+        clean_instance_name = _clean_instance_name(instance_name)
+        log_filename = f"{app_id}_{clean_instance_name}.log"
+    else:
+        # 兼容旧版本：如果没有实例名，使用app_id.log
+        log_filename = f"{app_id}.log"
+    
     logger.remove()
-    if sysname == "Darwin":
-        logger.add(f'{logs_path}/{file_name}_run.log', rotation='00:00', encoding='utf-8', enqueue=True,
-                   retention="30 days")
-    elif sysname == "Linux":
-        logger.add(f'{os.path.dirname(__file__)}/run.log', rotation='500MB')
+    if sysname == 'linux':
+        logger.add(f'{logs_path}/{log_filename}', rotation='500MB')
+    elif sysname == 'darwin':
+        logger.add(f'{logs_path}/{log_filename}', rotation='500MB')
+    elif sysname == 'windows':
+        logger.add(f'{logs_path}/{log_filename}', rotation='500MB')
+
+
+def _clean_instance_name(instance_name):
+    """清理实例名称，转换为适合文件名的格式
+    
+    Args:
+        instance_name: 原始实例名称
+        
+    Returns:
+        清理后的实例名称（小写，特殊字符转为下划线）
+    """
+    import re
+    # 转换为小写
+    cleaned = instance_name.lower()
+    # 替换中文和特殊字符为下划线
+    cleaned = re.sub(r'[^\w\-_.]', '_', cleaned)
+    # 合并多个连续的下划线
+    cleaned = re.sub(r'_+', '_', cleaned)
+    # 去除首尾下划线
+    cleaned = cleaned.strip('_')
+    return cleaned or 'default'
 
 
 _config_cache = {}  # 配置缓存
