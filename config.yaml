@@ -1,27 +1,22 @@
 # 火山云云防火墙配置文件
 
-# 通用配置
-common:
-  region: 'cn-beijing'                                  # 火山云地域
-
 # 查询地址组配置 
 describe_address_book:
-  page_size: 200     # 每页返回数量
-  page_number: 1     # 页码
+  page_size: 500                                        # 每页返回数量
+  page_number: 1                                        # 页码
 
 # 创建地址组配置 
 add_address_book:
-  group_name_prefix: 'P-Deny-Secops-Blacklist'         # 地址组名称前缀
-  description: '自动创建的安全封禁地址组'                  # 地址组描述
-  addresslist: ['1.1.1.1/32']                          # 默认地址列表
+  group_name_prefix: 'DEV-P-Deny-Secops-Blacklist'     # 地址组名称前缀
+  addresslist: '1.1.1.1/32'                            # 默认地址列表
 
 # 修改地址组配置
 modify_address_book:
-  max_addresses_per_group: 2000                         # 地址组最大容量
+  max_addresses_per_group: 15                           # 地址组最大容量
 
 # 查询控制策略配置 
 describe_control_policy:
-  page_size: 200     # 每页返回数量
+  page_size: 500                                        # 每页返回数量
 
 # 创建控制策略配置 
 add_control_policy:
@@ -29,7 +24,7 @@ add_control_policy:
   proto: 'ANY'                                          # 协议类型
   action: 'deny'                                        # 策略动作
   status: true                                          # 策略启用状态
-  destination_any: '0.0.0.0/0'                         # 目的地址
-  source_any: '0.0.0.0/0'                              # 源地址
+  destination_any: '0.0.0.0/0'                          # 目的地址
+  source_any: '0.0.0.0/0'                               # 源地址
   dest_port: 'ANY'                                      # 目标端口
   dest_port_type: 'port'                                # 目标端口类型

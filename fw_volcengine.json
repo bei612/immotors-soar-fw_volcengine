@@ -291,11 +291,18 @@
       "description": "查询控制策略组",
       "type": "generic",
       "parameters": {
+        "description": {
+          "name": "策略描述",
+          "description": "需要查询的策略描述",
+          "dataType": "STRING",
+          "order": 0,
+          "required": "false"
+        },
         "direction": {
           "name": "流量方向",
           "description": "需要查询的流量方向",
           "dataType": "STRING",
-          "order": 0,
+          "order": 1,
           "required": "true"
         }
       }

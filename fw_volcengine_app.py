@@ -100,8 +100,9 @@ class App(BaseApp):
 
     def DescribeControlPolicy(self, params):
         direction = params.get("direction")
+        description = params.get("description")
         describecontrolpolicyobj = FwVolcengineApp(ak=self.ak, sk=self.sk, endpoint=self.endpoint, region=self.region, proxies=self.proxies)
-        res = describecontrolpolicyobj.describe_control_policy(direction)
+        res = describecontrolpolicyobj.describe_control_policy(direction, description)
         return res
 
     def AddControlPolicy(self, params):

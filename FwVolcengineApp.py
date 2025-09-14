@@ -45,11 +45,12 @@ class FwVolcengineApp:
             resp, status, headers = client.add_address_book_with_http_info(request, _return_http_data_only=False)
             data = resp.to_dict()
             logger.info(f'{data}')
+            # 转换为阿里云兼容格式 - 业务逻辑层面
             if status == 200:
                 msg = {
                     "desc": "创建成功",
                     "groupname": groupname,
-                    "groupuuid": data['group_uuid'],
+                    "groupuuid": data.get('group_uuid', ''),
                     "description": description
                 }
                 return msg
@@ -71,9 +72,11 @@ class FwVolcengineApp:
         try:
             resp, status, headers = client.delete_address_book_with_http_info(request, _return_http_data_only=False)
             logger.info(f'删除地址簿成功: {groupuuid}')
-            return {
+            # 完全模拟阿里云的返回格式
+            res = {
                 "statusCode": status
             }
+            return res
         except Exception as e:
             logger.error(f'{e}')
             return str(e)
@@ -84,19 +87,21 @@ class FwVolcengineApp:
             query=query,
             group_type=grouptype,
             page_number=utils.get_config('describe_address_book.page_number', 1),
-            page_size=utils.get_config('describe_address_book.page_size', 200)
+            page_size=utils.get_config('describe_address_book.page_size', 500)
         )
         utils.check_os_type()
         try:
             resp, status, headers = client.describe_address_book_with_http_info(request, _return_http_data_only=False)
             data = resp.to_dict()
             logger.info(f'{data}')
-            return {
+            # 完全模拟阿里云的返回格式
+            res = {
                 "statusCode": status,
                 "body": {
                     "Acls": data.get('data', [])
                 }
             }
+            return res
         except Exception as e:
             logger.error(f'{e}')
             return str(e)
@@ -119,9 +124,11 @@ class FwVolcengineApp:
         try:
             resp, status, headers = client.modify_address_book_with_http_info(request, _return_http_data_only=False)
             logger.info(f'{resp}')
-            return {
+            # 完全模拟阿里云的返回格式
+            res = {
                 "statusCode": status
             }
+            return res
         except Exception as e:
             logger.error(f'{e}')
             return str(e)
@@ -129,20 +136,23 @@ class FwVolcengineApp:
     def describe_control_policy(self, direction, description=None):
         client = self.create_client()
         request = volcenginesdkfwcenter.DescribeControlPolicyRequest(
-            direction=direction
+            direction=direction,
+            page_size=utils.get_config('describe_control_policy.page_size', 500)
         )
         utils.check_os_type()
         try:
             resp, status, headers = client.describe_control_policy_with_http_info(request, _return_http_data_only=False)
             data = resp.to_dict()
             logger.info(f'{data}')
-            return {
+            # 完全模拟阿里云的返回格式
+            res = {
                 "statusCode": status,
                 "body": {
                     "TotalCount": len(data.get('data', [])),
                     "Policys": data.get('data', [])
                 }
             }
+            return res
         except Exception as e:
             logger.error(f'{e}')
             return str(e)
@@ -169,10 +179,11 @@ class FwVolcengineApp:
             resp, status, headers = client.add_control_policy_with_http_info(request, _return_http_data_only=False)
             data = resp.to_dict()
             logger.info(f"{data}")
+            # 转换为阿里云兼容格式 - 业务逻辑层面
             if status == 200:
                 msg = {
                     "desc": "创建成功",
-                    "acluuid": data['rule_id']
+                    "acluuid": data.get('rule_id', '')
                 }
                 return msg
             else:
@@ -194,9 +205,11 @@ class FwVolcengineApp:
         try:
             resp, status, headers = client.delete_control_policy_with_http_info(request, _return_http_data_only=False)
             logger.info(f'{resp}')
-            return {
+            # 完全模拟阿里云的返回格式
+            res = {
                 "statusCode": status
             }
+            return res
         except Exception as e:
             logger.error(f'{e}')
             return str(e)
@@ -309,12 +322,12 @@ class FwVolcengineApp:
                 for addr in list_addrs_groups[:]:
                     found = False
                     for list_res_describe_address_book in res_describe_address_book['body']['Acls']:
-                        if query_prefix in list_res_describe_address_book['group_name']:
-                            if addr in list_res_describe_address_book['address_list']:
+                        if query_prefix in list_res_describe_address_book['GroupName']:
+                            if addr in list_res_describe_address_book['AddressList']:
                                 found = True
                                 msg = {
                                     "addr": f"{addr}",
-                                    "groupname": list_res_describe_address_book['group_name'],
+                                    "groupname": list_res_describe_address_book['GroupName'],
                                     "desc": "无需封禁"
                                 }
                                 list_existed_addrs.append(msg)
@@ -337,14 +350,14 @@ class FwVolcengineApp:
                 # 不停遍历每一个地址簿，直到 全部的地址簿空位被填满（N<M） 或 消费完成全部待封禁的IP（N>=M）
                 addrgrps = [data_describe_address_book for data_describe_address_book in
                             res_describe_address_book['body']['Acls']
-                            if query_prefix in data_describe_address_book['group_name']]
+                            if query_prefix in data_describe_address_book['GroupName']]
                 for addrgrp in addrgrps:
                     if not list_addrs_groups:
                         break
-                    addrgrp_groupname = addrgrp['group_name']
-                    addrgrp_groupuuid = addrgrp['group_uuid']
-                    addrgrp_description = addrgrp['description']
-                    len_addrgrp = len(addrgrp['address_list'])
+                    addrgrp_groupname = addrgrp['GroupName']
+                    addrgrp_groupuuid = addrgrp['GroupUuid']
+                    addrgrp_description = addrgrp['Description']
+                    len_addrgrp = len(addrgrp['AddressList'])
                     # 如果当前地址组内的地址数量小于地址组最大容量（这个地址簿还没有满）
                     if len_addrgrp < max_addresses_per_group:
                         # 查询当前地址组同名的控制策略组
@@ -358,16 +371,16 @@ class FwVolcengineApp:
                         # 如果待消费的ip数量这个地址簿剩余容量（ip数量多到这个地址簿放不下），填完坑还有ip剩余
                         if len(list_addrs_groups[:]) > max_addresses_per_group - len_addrgrp:
                             list_addrgrp_addresslist = list_addrs_groups[:max_addresses_per_group - len_addrgrp]
-                            data_addrgrp_addresslist = addrgrp['address_list'] + list_addrs_groups[:max_addresses_per_group - len_addrgrp]
+                            data_addrgrp_addresslist = addrgrp['AddressList'] + list_addrs_groups[:max_addresses_per_group - len_addrgrp]
                         # 如果待消费的ip数量小于等于这个地址簿剩余容量（这个地址簿可以一次性消费掉全部ip），填完坑没有ip剩余
                         else:
                             list_addrgrp_addresslist = list_addrs_groups[:]
-                            data_addrgrp_addresslist = addrgrp['address_list'] + list_addrs_groups[:]
+                            data_addrgrp_addresslist = addrgrp['AddressList'] + list_addrs_groups[:]
                         # 将需要封禁的地址资源更新至地址资源组
                         res_modify_address_book = self.modify_address_book(
-                            groupname=addrgrp['group_name'],
-                            groupuuid=addrgrp['group_uuid'],
-                            description=addrgrp['description'],
+                            groupname=addrgrp_groupname,
+                            groupuuid=addrgrp_groupuuid,
+                            description=addrgrp_description,
                             addresslist=data_addrgrp_addresslist
                         )
                         # 如果更新地址资源组成功，则将成功信息加入到list_success_addrs列表
@@ -411,10 +424,10 @@ class FwVolcengineApp:
                         groupname=f"{query_prefix}-{random_string}",
                         grouptype=describe_address_book_grouptype,
                         description=f"{query_prefix}-{random_string}",
-                        addresslist=utils.get_config('add_address_book.addresslist', ['1.1.1.1/32'])
+                        addresslist=utils.get_config('add_address_book.addresslist', '1.1.1.1/32')
                     )
                     # 如果创建地址资源组成功，则创建同名的控制策略组
-                    if isinstance(res_add_address_book, dict) and res_add_address_book.get('desc') == "创建成功":
+                    if res_add_address_book.get('desc') == "创建成功":
                         if direction == 'in':
                             res_add_control_policy = self.add_control_policy(
                                 aclaction=utils.get_config('add_control_policy.action', 'deny'),
@@ -453,7 +466,7 @@ class FwVolcengineApp:
                                     neworder=utils.get_config('add_control_policy.prio', 2)
                                 )
                         # 如果创建控制策略组成功，则将成功信息加入到list_success_addrs列表
-                        if isinstance(res_add_control_policy, dict) and res_add_control_policy.get('desc') == "创建成功":
+                        if res_add_control_policy.get('desc') == "创建成功":
                             msg = {
                                 "groupname": res_add_address_book['groupname'],
                                 "groupuuid": res_add_address_book['groupuuid'],
@@ -580,13 +593,13 @@ class FwVolcengineApp:
                 for addrgrp in res_describe_address_book['body']['Acls']:
                     if not list_addrs_groups:
                         break
-                    if query_prefix not in addrgrp['group_name']:
+                    if query_prefix not in addrgrp['GroupName']:
                         continue
                         
-                    addrgrp_groupname = addrgrp['group_name']
-                    addrgrp_groupuuid = addrgrp['group_uuid']
-                    addrgrp_description = addrgrp['description']
-                    addrgrp_addresslist = addrgrp['address_list']
+                    addrgrp_groupname = addrgrp['GroupName']
+                    addrgrp_groupuuid = addrgrp['GroupUuid']
+                    addrgrp_description = addrgrp['Description']
+                    addrgrp_addresslist = addrgrp['AddressList']
                     
                     # 查找匹配的IP并构建新的地址列表
                     matched_addrs = []
@@ -611,11 +624,11 @@ class FwVolcengineApp:
                             if isinstance(res_describe_control_policy, dict) and res_describe_control_policy.get('statusCode') == 200:
                                 policies = res_describe_control_policy['body']['Policys']
                                 for policy in policies:
-                                    policy_source = policy.get('source', '')
-                                    policy_destination = policy.get('destination', '')
+                                    policy_source = policy.get('Source', '')
+                                    policy_destination = policy.get('Destination', '')
                                     if ((direction == 'in' and policy_source == addrgrp_groupname) or
                                         (direction == 'out' and policy_destination == addrgrp_groupname)):
-                                        policy_id = policy.get('rule_id')
+                                        policy_id = policy.get('AclUuid')
                                         if policy_id:
                                             res_delete_policy = self.delete_control_policy(policy_id, direction)
                                             if isinstance(res_delete_policy, dict) and res_delete_policy.get('statusCode') == 200:
