@@ -12,17 +12,17 @@ add_address_book:
 
 # 修改地址组配置
 modify_address_book:
-  max_addresses_per_group: 15                           # 地址组最大容量
+  max_addresses_per_group: 15                           # 地址组最大容量 2万
 
 # 查询控制策略配置 
 describe_control_policy:
-  page_size: 500                                        # 每页返回数量
+  page_size: 100                                        # 每页返回数量（火山云API最大限制100）
 
 # 创建控制策略配置 
 add_control_policy:
   prio: 2                                               # 策略优先级
   proto: 'ANY'                                          # 协议类型
-  action: 'deny'                                        # 策略动作
+  action: 'monitor'                                     # 策略动作（观察模式）
   status: true                                          # 策略启用状态
   destination_any: '0.0.0.0/0'                          # 目的地址
   source_any: '0.0.0.0/0'                               # 源地址

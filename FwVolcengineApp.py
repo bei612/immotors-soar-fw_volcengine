@@ -34,6 +34,12 @@ class FwVolcengineApp:
 
     def add_address_book(self, groupname, grouptype, description, addresslist):
         client = self.create_client()
+        # 处理addresslist格式 - 确保是列表
+        if isinstance(addresslist, str):
+            addresslist = [addr.strip() for addr in addresslist.split(',') if addr.strip()]
+        elif not isinstance(addresslist, list):
+            addresslist = []
+        
         request = volcenginesdkfwcenter.AddAddressBookRequest(
             group_name=groupname,
             group_type=grouptype,
@@ -44,23 +50,40 @@ class FwVolcengineApp:
         try:
             resp, status, headers = client.add_address_book_with_http_info(request, _return_http_data_only=False)
             data = resp.to_dict()
-            logger.info(f'{data}')
-            # 转换为阿里云兼容格式 - 业务逻辑层面
-            if status == 200:
-                msg = {
-                    "desc": "创建成功",
-                    "groupname": groupname,
-                    "groupuuid": data.get('group_uuid', ''),
-                    "description": description
-                }
-                return msg
+            logger.info(f'add_address_book响应: status={status}, data={data}')
+            
+            # 检查是否真正创建成功：状态码200且有group_uuid
+            if status == 200 and data.get('group_uuid'):
+                # 再次验证地址组是否真的存在
+                import time
+                time.sleep(1)  # 等待1秒
+                verify_result = self.describe_address_book(query=groupname, grouptype=grouptype)
+                logger.info(f'验证地址组创建结果: {verify_result}')
+                
+                if (isinstance(verify_result, dict) and 
+                    verify_result.get('statusCode') == 200 and 
+                    verify_result.get('body', {}).get('Acls')):
+                    msg = {
+                        "desc": "创建成功",
+                        "groupname": groupname,
+                        "groupuuid": data.get('group_uuid', ''),
+                        "description": description
+                    }
+                    return msg
+                else:
+                    logger.error(f'地址组创建后验证失败: {verify_result}')
+                    msg = {
+                        "desc": "创建失败"
+                    }
+                    return msg
             else:
+                logger.error(f'地址组创建失败: status={status}, data={data}')
                 msg = {
                     "desc": "创建失败"
                 }
                 return msg
         except Exception as e:
-            logger.error(f'{e}')
+            logger.error(f'地址组创建异常: {e}')
             return str(e)
 
     def delete_address_book(self, groupuuid):
@@ -95,10 +118,25 @@ class FwVolcengineApp:
             data = resp.to_dict()
             logger.info(f'{data}')
             # 完全模拟阿里云的返回格式
+            # 火山云SDK返回的是小写下划线格式，需要转换为阿里云的大写驼峰格式
+            # 注意：火山云SDK在没有数据时返回data=None，需要转换为空数组
+            raw_data = data.get('data') or []
+            acls_data = []
+            for item in raw_data:
+                converted_item = {
+                    "GroupName": item.get('group_name', ''),
+                    "GroupUuid": item.get('group_uuid', ''),
+                    "Description": item.get('description', ''),
+                    "AddressList": item.get('address_list', []),
+                    "GroupType": item.get('group_type', ''),
+                    "RefCnt": item.get('ref_cnt', 0)
+                }
+                acls_data.append(converted_item)
+            
             res = {
                 "statusCode": status,
                 "body": {
-                    "Acls": data.get('data', [])
+                    "Acls": acls_data
                 }
             }
             return res
@@ -135,21 +173,47 @@ class FwVolcengineApp:
 
     def describe_control_policy(self, direction, description=None):
         client = self.create_client()
-        request = volcenginesdkfwcenter.DescribeControlPolicyRequest(
-            direction=direction,
-            page_size=utils.get_config('describe_control_policy.page_size', 500)
-        )
+        # 构建请求参数
+        request_params = {
+            'direction': direction,
+            'page_size': utils.get_config('describe_control_policy.page_size', 100)
+        }
+        # 如果提供了description，添加到请求参数中进行过滤
+        if description:
+            request_params['description'] = description
+            
+        request = volcenginesdkfwcenter.DescribeControlPolicyRequest(**request_params)
         utils.check_os_type()
         try:
             resp, status, headers = client.describe_control_policy_with_http_info(request, _return_http_data_only=False)
             data = resp.to_dict()
             logger.info(f'{data}')
             # 完全模拟阿里云的返回格式
+            # 火山云SDK返回的是小写下划线格式，需要转换为阿里云的大写驼峰格式
+            # 注意：火山云SDK在没有数据时返回data=None，需要转换为空数组
+            raw_data = data.get('data') or []
+            policys_data = []
+            for item in raw_data:
+                converted_item = {
+                    "AclUuid": item.get('rule_id', ''),
+                    "Action": item.get('action', ''),
+                    "Description": item.get('description', ''),
+                    "Destination": item.get('destination', ''),
+                    "DestinationType": item.get('destination_type', ''),
+                    "Direction": item.get('direction', ''),
+                    "Proto": item.get('proto', ''),
+                    "Source": item.get('source', ''),
+                    "SourceType": item.get('source_type', ''),
+                    "Status": item.get('status', True),
+                    "Prio": item.get('prio', 0)
+                }
+                policys_data.append(converted_item)
+            
             res = {
                 "statusCode": status,
                 "body": {
-                    "TotalCount": len(data.get('data', [])),
-                    "Policys": data.get('data', [])
+                    "TotalCount": len(policys_data),
+                    "Policys": policys_data
                 }
             }
             return res
@@ -160,6 +224,10 @@ class FwVolcengineApp:
     def add_control_policy(self, aclaction, description, destination, destinationtype, direction, proto, source,
                           sourcetype, neworder, applicationname=None, applicationnamelist=None, domainresolvetype=None):
         client = self.create_client()
+        
+        # 调试：打印控制策略参数
+        logger.info(f"创建控制策略参数: source={source}, sourcetype={sourcetype}, destination={destination}, destinationtype={destinationtype}")
+        
         request = volcenginesdkfwcenter.AddControlPolicyRequest(
             prio=int(neworder),
             direction=direction,
@@ -183,7 +251,7 @@ class FwVolcengineApp:
             if status == 200:
                 msg = {
                     "desc": "创建成功",
-                    "acluuid": data.get('rule_id', '')
+                    "acluuid": data.get('rule_id', '')  # 修正：火山云SDK返回小写下划线格式
                 }
                 return msg
             else:
@@ -314,7 +382,11 @@ class FwVolcengineApp:
                 )
                 
                 # 检查API调用是否成功
-                if isinstance(res_describe_address_book, str) or res_describe_address_book.get('statusCode') != 200:
+                if (isinstance(res_describe_address_book, str) or 
+                    res_describe_address_book is None or 
+                    res_describe_address_book.get('statusCode') != 200 or
+                    res_describe_address_book.get('body') is None or
+                    res_describe_address_book.get('body', {}).get('Acls') is None):
                     logger.error(f"查询地址组失败: {res_describe_address_book}")
                     continue
                 
@@ -427,7 +499,18 @@ class FwVolcengineApp:
                         addresslist=utils.get_config('add_address_book.addresslist', '1.1.1.1/32')
                     )
                     # 如果创建地址资源组成功，则创建同名的控制策略组
-                    if res_add_address_book.get('desc') == "创建成功":
+                    if isinstance(res_add_address_book, dict) and res_add_address_book.get('desc') == "创建成功":
+                        # 等待地址组创建完成，火山云API需要时间同步
+                        import time
+                        time.sleep(5)  # 增加延迟时间
+                        
+                        # 调试：打印地址组信息
+                        logger.info(f"准备创建控制策略，地址组信息: {res_add_address_book}")
+                        
+                        # 验证地址组是否真的创建成功
+                        verify_result = self.describe_address_book(query=res_add_address_book['groupname'], grouptype=describe_address_book_grouptype)
+                        logger.info(f"验证地址组是否存在: {verify_result}")
+                        
                         if direction == 'in':
                             res_add_control_policy = self.add_control_policy(
                                 aclaction=utils.get_config('add_control_policy.action', 'deny'),
@@ -436,7 +519,7 @@ class FwVolcengineApp:
                                 destinationtype='net',
                                 direction=direction,
                                 proto=utils.get_config('add_control_policy.proto', 'ANY'),
-                                source=res_add_address_book['groupname'],
+                                source=res_add_address_book['groupuuid'],  # 修改：使用UUID而不是名称
                                 sourcetype='group',
                                 neworder=utils.get_config('add_control_policy.prio', 2)
                             )
@@ -445,7 +528,7 @@ class FwVolcengineApp:
                                 res_add_control_policy = self.add_control_policy(
                                     aclaction=utils.get_config('add_control_policy.action', 'deny'),
                                     description=res_add_address_book['description'],
-                                    destination=res_add_address_book['groupname'],
+                                    destination=res_add_address_book['groupuuid'],  # 修改：使用UUID而不是名称
                                     destinationtype='group',
                                     direction=direction,
                                     proto=utils.get_config('add_control_policy.proto', 'ANY'),
@@ -457,7 +540,7 @@ class FwVolcengineApp:
                                 res_add_control_policy = self.add_control_policy(
                                     aclaction=utils.get_config('add_control_policy.action', 'deny'),
                                     description=res_add_address_book['description'],
-                                    destination=res_add_address_book['groupname'],
+                                    destination=res_add_address_book['groupuuid'],  # 修改：使用UUID而不是名称
                                     destinationtype='group',
                                     direction=direction,
                                     proto=utils.get_config('add_control_policy.proto', 'TCP'),
@@ -466,7 +549,7 @@ class FwVolcengineApp:
                                     neworder=utils.get_config('add_control_policy.prio', 2)
                                 )
                         # 如果创建控制策略组成功，则将成功信息加入到list_success_addrs列表
-                        if res_add_control_policy.get('desc') == "创建成功":
+                        if isinstance(res_add_control_policy, dict) and res_add_control_policy.get('desc') == "创建成功":
                             msg = {
                                 "groupname": res_add_address_book['groupname'],
                                 "groupuuid": res_add_address_book['groupuuid'],
@@ -488,6 +571,14 @@ class FwVolcengineApp:
                                 "desc": "创建失败"
                             }
                             logger.info(f'{msg}')
+                    # 如果创建地址资源组失败，记录错误信息
+                    else:
+                        logger.error(f"创建地址资源组失败: {res_add_address_book}")
+                        msg = {
+                            "groupname": f"{query_prefix}-{random_string}",
+                            "desc": "创建地址资源组失败"
+                        }
+                        logger.info(f'{msg}')
             # while主循环保护机制
             # 如果2次循环后，list_remain_addrs列表中的地址数量没有变化，则认为封禁失败加入list_failed_addrs，并退出循环
             if len(list_remain_addrs) == len_list_remain_addrs:
@@ -585,7 +676,11 @@ class FwVolcengineApp:
                 )
                 
                 # 检查API调用是否成功
-                if isinstance(res_describe_address_book, str) or res_describe_address_book.get('statusCode') != 200:
+                if (isinstance(res_describe_address_book, str) or 
+                    res_describe_address_book is None or 
+                    res_describe_address_book.get('statusCode') != 200 or
+                    res_describe_address_book.get('body') is None or
+                    res_describe_address_book.get('body', {}).get('Acls') is None):
                     logger.error(f"查询地址组失败: {res_describe_address_book}")
                     continue
                 
@@ -619,8 +714,8 @@ class FwVolcengineApp:
                     if matched_addrs:
                         if len(new_address_list) == 0:
                             # 地址组为空，删除地址组和相关策略
-                            # 先查找并删除相关的控制策略
-                            res_describe_control_policy = self.describe_control_policy(direction)
+                            # 先查找并删除相关的控制策略（按描述过滤）
+                            res_describe_control_policy = self.describe_control_policy(direction, description=addrgrp_groupname)
                             if isinstance(res_describe_control_policy, dict) and res_describe_control_policy.get('statusCode') == 200:
                                 policies = res_describe_control_policy['body']['Policys']
                                 for policy in policies:
