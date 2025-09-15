@@ -7,63 +7,51 @@ import os, ipaddress, yaml, platform
 from loguru import logger
 from functools import wraps
 
-def setup_logging(use_instance_name=True):
-    """日志装饰器，自动配置日志系统
+def init_logging(instance_name=None):
+    """初始化日志系统，在__init__中调用一次即可
     
     Args:
-        use_instance_name: True=使用应用名_实例名，False=仅使用应用名
+        instance_name: 应用实例名称，用于区分不同实例的日志文件
     """
-    def decorator(func):
-        @wraps(func)
-        def wrapper(self, *args, **kwargs):
-            try:
-                # 获取应用ID（从文件路径中提取）
-                current_dir = os.path.dirname(__file__)
-                src_dir = os.path.dirname(os.path.dirname(current_dir))
-                logs_path = os.path.join(src_dir, "logs")
-                
-                # 确保日志目录存在
-                os.makedirs(logs_path, exist_ok=True)
-                
-                app_id = os.path.basename(current_dir)
-                
-                # 构建日志文件名
-                if use_instance_name:
-                    # 尝试获取实例名
-                    instance_name = getattr(self, 'asset', None) and getattr(self.asset, 'name', None)
-                    if instance_name:
-                        log_filename = f"{app_id}_{instance_name}.log"
-                    else:
-                        log_filename = f"{app_id}.log"
-                else:
-                    log_filename = f"{app_id}.log"
-                
-                log_file_path = os.path.join(logs_path, log_filename)
-                
-                # 配置日志
-                logger.remove()
-                logger.add(
-                    log_file_path,
-                    rotation='500MB',
-                    encoding='utf-8',
-                    format="{time:YYYY-MM-DD HH:mm:ss.SSS} | {level} | {name}:{function}:{line} - {message}",
-                    level="INFO"
-                )
-                logger.info(f"日志配置完成: {log_file_path}")
-                
-            except Exception as e:
-                print(f"日志配置失败: {e}")
-                # 降级到控制台输出
-                logger.remove()
-                logger.add(
-                    lambda msg: print(msg, end=''),
-                    format="{time:YYYY-MM-DD HH:mm:ss.SSS} | {level} | {message}",
-                    level="INFO"
-                )
-            
-            return func(self, *args, **kwargs)
-        return wrapper
-    return decorator
+    try:
+        # 获取应用ID（从文件路径中提取）
+        current_dir = os.path.dirname(__file__)
+        src_dir = os.path.dirname(os.path.dirname(current_dir))
+        logs_path = os.path.join(src_dir, "logs")
+        
+        # 确保日志目录存在
+        os.makedirs(logs_path, exist_ok=True)
+        
+        app_id = os.path.basename(current_dir)
+        
+        # 构建日志文件名
+        if instance_name:
+            log_filename = f"{app_id}_{instance_name}.log"
+        else:
+            log_filename = f"{app_id}.log"
+        
+        log_file_path = os.path.join(logs_path, log_filename)
+        
+        # 配置日志
+        logger.remove()
+        logger.add(
+            log_file_path,
+            rotation='500MB',
+            encoding='utf-8',
+            format="{time:YYYY-MM-DD HH:mm:ss.SSS} | {level} | {name}:{function}:{line} - {message}",
+            level="INFO"
+        )
+        logger.info(f"日志配置完成: {log_file_path}")
+        
+    except Exception as e:
+        print(f"日志配置失败: {e}")
+        # 降级到控制台输出
+        logger.remove()
+        logger.add(
+            lambda msg: print(msg, end=''),
+            format="{time:YYYY-MM-DD HH:mm:ss.SSS} | {level} | {message}",
+            level="INFO"
+        )
 
 
 _config_cache = {}  # 配置缓存

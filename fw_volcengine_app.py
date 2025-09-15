@@ -5,6 +5,7 @@ from cbt.base_app import BaseApp
 from cbt.action_result import ActionResult
 import cbt.status as cbt_status
 from apps.fw_volcengine.FwVolcengineApp import FwVolcengineApp
+from apps.fw_volcengine import utils
 from loguru import logger
 import os
 import ipaddress
@@ -28,6 +29,11 @@ class App(BaseApp):
                 self.proxies = f"{scheme[0]}://{self.proxy_user}:{self.proxy_pass}@{scheme[1]}"
         else:
             self.proxies = None
+        
+        # 初始化日志系统（此时asset已经设置）
+        # utils.init_logging(getattr(self.asset, 'name', None))
+        utils.init_logging()
+        
         return cbt_status.APP_SUCCESS
 
     def unload(self):
@@ -74,8 +80,6 @@ class App(BaseApp):
         addresslist = params.get("addresslist")
         addaddressbookobj = FwVolcengineApp(ak=self.ak, sk=self.sk, endpoint=self.endpoint, region=self.region, proxies=self.proxies)
         # 传递asset信息以支持实例名日志
-        if hasattr(self, 'asset'):
-            addaddressbookobj.asset = self.asset
         res = addaddressbookobj.add_address_book(groupname, grouptype, description, addresslist)
         return res
 
@@ -83,8 +87,6 @@ class App(BaseApp):
         groupuuid =  params.get("groupuuid")
         deleteaddressbookobj = FwVolcengineApp(ak=self.ak, sk=self.sk, endpoint=self.endpoint, region=self.region, proxies=self.proxies)
         # 传递asset信息以支持实例名日志
-        if hasattr(self, 'asset'):
-            deleteaddressbookobj.asset = self.asset
         res = deleteaddressbookobj.delete_address_book(groupuuid)
         return res
 
@@ -93,8 +95,6 @@ class App(BaseApp):
         grouptype = params.get("grouptype")
         describeaddressbookobj = FwVolcengineApp(ak=self.ak, sk=self.sk, endpoint=self.endpoint, region=self.region, proxies=self.proxies)
         # 传递asset信息以支持实例名日志
-        if hasattr(self, 'asset'):
-            describeaddressbookobj.asset = self.asset
         res = describeaddressbookobj.describe_address_book(query, grouptype)
         return res
 
@@ -105,8 +105,6 @@ class App(BaseApp):
         addresslist = params.get("addresslist")
         modifyaddressbookobj = FwVolcengineApp(ak=self.ak, sk=self.sk, endpoint=self.endpoint, region=self.region, proxies=self.proxies)
         # 传递asset信息以支持实例名日志
-        if hasattr(self, 'asset'):
-            modifyaddressbookobj.asset = self.asset
         res = modifyaddressbookobj.modify_address_book(groupname, groupuuid, description, addresslist)
         return res
 
@@ -115,8 +113,6 @@ class App(BaseApp):
         description = params.get("description")
         describecontrolpolicyobj = FwVolcengineApp(ak=self.ak, sk=self.sk, endpoint=self.endpoint, region=self.region, proxies=self.proxies)
         # 传递asset信息以支持实例名日志
-        if hasattr(self, 'asset'):
-            describecontrolpolicyobj.asset = self.asset
         res = describecontrolpolicyobj.describe_control_policy(direction, description)
         return res
 
@@ -135,8 +131,6 @@ class App(BaseApp):
         domainresolvetype = params.get("domainresolvetype")
         addcontrolpolicyobj = FwVolcengineApp(ak=self.ak, sk=self.sk, endpoint=self.endpoint, region=self.region, proxies=self.proxies)
         # 传递asset信息以支持实例名日志
-        if hasattr(self, 'asset'):
-            addcontrolpolicyobj.asset = self.asset
         res = addcontrolpolicyobj.add_control_policy(aclaction, description, destination, destinationtype, direction, proto, source, sourcetype, neworder, applicationname, applicationnamelist, domainresolvetype)
         return res
 
@@ -145,8 +139,6 @@ class App(BaseApp):
         direction = params.get("direction")
         deletecontrolpolicyobj = FwVolcengineApp(ak=self.ak, sk=self.sk, endpoint=self.endpoint, region=self.region, proxies=self.proxies)
         # 传递asset信息以支持实例名日志
-        if hasattr(self, 'asset'):
-            deletecontrolpolicyobj.asset = self.asset
         res = deletecontrolpolicyobj.delete_control_policy(acluuid, direction)
         return res
 
@@ -157,8 +149,6 @@ class App(BaseApp):
         direction = params.get("direction")
         autoblockobj = FwVolcengineApp(ak=self.ak, sk=self.sk, endpoint=self.endpoint, region=self.region, proxies=self.proxies)
         # 传递asset信息以支持实例名日志
-        if hasattr(self, 'asset'):
-            autoblockobj.asset = self.asset
         res = autoblockobj.auto_block_task(addr, direction)
         return res
 
@@ -168,7 +158,5 @@ class App(BaseApp):
         direction = params.get("direction")
         autounblockobj = FwVolcengineApp(ak=self.ak, sk=self.sk, endpoint=self.endpoint, region=self.region, proxies=self.proxies)
         # 传递asset信息以支持实例名日志
-        if hasattr(self, 'asset'):
-            autounblockobj.asset = self.asset
         res = autounblockobj.auto_unblock_task(addr, direction)
         return res

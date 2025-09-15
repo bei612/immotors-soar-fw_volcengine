@@ -32,7 +32,6 @@ class FwVolcengineApp:
 
     # 火山云云防火墙原子方法
 
-    @utils.setup_logging(use_instance_name=True)
     def add_address_book(self, groupname, grouptype, description, addresslist):
         client = self.create_client()
         # 处理addresslist格式 - 确保是列表
@@ -86,7 +85,6 @@ class FwVolcengineApp:
             logger.error(f'地址组创建异常: {e}')
             return str(e)
 
-    @utils.setup_logging(use_instance_name=True)
     def delete_address_book(self, groupuuid):
         client = self.create_client()
         request = volcenginesdkfwcenter.DeleteAddressBookRequest(
@@ -104,7 +102,6 @@ class FwVolcengineApp:
             logger.error(f'{e}')
             return str(e)
 
-    @utils.setup_logging(use_instance_name=True)
     def describe_address_book(self, query, grouptype):
         client = self.create_client()
         request = volcenginesdkfwcenter.DescribeAddressBookRequest(
@@ -144,7 +141,6 @@ class FwVolcengineApp:
             logger.error(f'{e}')
             return str(e)
 
-    @utils.setup_logging(use_instance_name=True)
     def modify_address_book(self, groupname, groupuuid, description, addresslist):
         client = self.create_client()
         # 处理addresslist格式
@@ -171,7 +167,6 @@ class FwVolcengineApp:
             logger.error(f'{e}')
             return str(e)
 
-    @utils.setup_logging(use_instance_name=True)
     def describe_control_policy(self, direction, description=None):
         client = self.create_client()
         # 构建请求参数
@@ -221,7 +216,6 @@ class FwVolcengineApp:
             logger.error(f'{e}')
             return str(e)
 
-    @utils.setup_logging(use_instance_name=True)
     def add_control_policy(self, aclaction, description, destination, destinationtype, direction, proto, source,
                           sourcetype, neworder, applicationname=None, applicationnamelist=None, domainresolvetype=None):
         client = self.create_client()
@@ -263,7 +257,6 @@ class FwVolcengineApp:
             logger.error(f'{e}')
             return str(e)
 
-    @utils.setup_logging(use_instance_name=True)
     def delete_control_policy(self, acluuid, direction):
         client = self.create_client()
         request = volcenginesdkfwcenter.DeleteControlPolicyRequest(
@@ -283,7 +276,6 @@ class FwVolcengineApp:
             return str(e)
 
 
-    @utils.setup_logging(use_instance_name=True)
     def auto_block_task(self, addr, direction=None):
         
         # 验证direction参数
@@ -628,7 +620,6 @@ class FwVolcengineApp:
                 }
             }
 
-    @utils.setup_logging(use_instance_name=True)
     def auto_unblock_task(self, addr, direction=None):
         
         # 验证direction参数
