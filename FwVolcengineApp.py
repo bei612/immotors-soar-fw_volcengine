@@ -32,6 +32,7 @@ class FwVolcengineApp:
 
     # 火山云云防火墙原子方法
 
+    @utils.setup_logging(use_instance_name=True)
     def add_address_book(self, groupname, grouptype, description, addresslist):
         client = self.create_client()
         # 处理addresslist格式 - 确保是列表
@@ -46,9 +47,6 @@ class FwVolcengineApp:
             description=description,
             address_list=addresslist
         )
-        # 获取实例名（如果在CBT框架中运行）
-        instance_name = getattr(self, 'asset', None) and getattr(self.asset, 'name', None)
-        utils.check_os_type(instance_name)
         try:
             resp, status, headers = client.add_address_book_with_http_info(request, _return_http_data_only=False)
             data = resp.to_dict()
@@ -88,14 +86,12 @@ class FwVolcengineApp:
             logger.error(f'地址组创建异常: {e}')
             return str(e)
 
+    @utils.setup_logging(use_instance_name=True)
     def delete_address_book(self, groupuuid):
         client = self.create_client()
         request = volcenginesdkfwcenter.DeleteAddressBookRequest(
             group_uuid=groupuuid
         )
-        # 获取实例名（如果在CBT框架中运行）
-        instance_name = getattr(self, 'asset', None) and getattr(self.asset, 'name', None)
-        utils.check_os_type(instance_name)
         try:
             resp, status, headers = client.delete_address_book_with_http_info(request, _return_http_data_only=False)
             logger.info(f'删除地址簿成功: {groupuuid}')
@@ -108,6 +104,7 @@ class FwVolcengineApp:
             logger.error(f'{e}')
             return str(e)
 
+    @utils.setup_logging(use_instance_name=True)
     def describe_address_book(self, query, grouptype):
         client = self.create_client()
         request = volcenginesdkfwcenter.DescribeAddressBookRequest(
@@ -116,9 +113,6 @@ class FwVolcengineApp:
             page_number=utils.get_config('describe_address_book.page_number', 1),
             page_size=utils.get_config('describe_address_book.page_size', 500)
         )
-        # 获取实例名（如果在CBT框架中运行）
-        instance_name = getattr(self, 'asset', None) and getattr(self.asset, 'name', None)
-        utils.check_os_type(instance_name)
         try:
             resp, status, headers = client.describe_address_book_with_http_info(request, _return_http_data_only=False)
             data = resp.to_dict()
@@ -150,6 +144,7 @@ class FwVolcengineApp:
             logger.error(f'{e}')
             return str(e)
 
+    @utils.setup_logging(use_instance_name=True)
     def modify_address_book(self, groupname, groupuuid, description, addresslist):
         client = self.create_client()
         # 处理addresslist格式
@@ -164,9 +159,6 @@ class FwVolcengineApp:
             description=description,
             address_list=addresslist
         )
-        # 获取实例名（如果在CBT框架中运行）
-        instance_name = getattr(self, 'asset', None) and getattr(self.asset, 'name', None)
-        utils.check_os_type(instance_name)
         try:
             resp, status, headers = client.modify_address_book_with_http_info(request, _return_http_data_only=False)
             logger.info(f'{resp}')
@@ -179,6 +171,7 @@ class FwVolcengineApp:
             logger.error(f'{e}')
             return str(e)
 
+    @utils.setup_logging(use_instance_name=True)
     def describe_control_policy(self, direction, description=None):
         client = self.create_client()
         # 构建请求参数
@@ -191,9 +184,6 @@ class FwVolcengineApp:
             request_params['description'] = description
             
         request = volcenginesdkfwcenter.DescribeControlPolicyRequest(**request_params)
-        # 获取实例名（如果在CBT框架中运行）
-        instance_name = getattr(self, 'asset', None) and getattr(self.asset, 'name', None)
-        utils.check_os_type(instance_name)
         try:
             resp, status, headers = client.describe_control_policy_with_http_info(request, _return_http_data_only=False)
             data = resp.to_dict()
@@ -231,6 +221,7 @@ class FwVolcengineApp:
             logger.error(f'{e}')
             return str(e)
 
+    @utils.setup_logging(use_instance_name=True)
     def add_control_policy(self, aclaction, description, destination, destinationtype, direction, proto, source,
                           sourcetype, neworder, applicationname=None, applicationnamelist=None, domainresolvetype=None):
         client = self.create_client()
@@ -252,9 +243,6 @@ class FwVolcengineApp:
             description=description,
             status=utils.get_config('add_control_policy.status', True)
         )
-        # 获取实例名（如果在CBT框架中运行）
-        instance_name = getattr(self, 'asset', None) and getattr(self.asset, 'name', None)
-        utils.check_os_type(instance_name)
         try:
             resp, status, headers = client.add_control_policy_with_http_info(request, _return_http_data_only=False)
             data = resp.to_dict()
@@ -275,15 +263,13 @@ class FwVolcengineApp:
             logger.error(f'{e}')
             return str(e)
 
+    @utils.setup_logging(use_instance_name=True)
     def delete_control_policy(self, acluuid, direction):
         client = self.create_client()
         request = volcenginesdkfwcenter.DeleteControlPolicyRequest(
             rule_id=acluuid,
             direction=direction
         )
-        # 获取实例名（如果在CBT框架中运行）
-        instance_name = getattr(self, 'asset', None) and getattr(self.asset, 'name', None)
-        utils.check_os_type(instance_name)
         try:
             resp, status, headers = client.delete_control_policy_with_http_info(request, _return_http_data_only=False)
             logger.info(f'{resp}')
@@ -297,10 +283,8 @@ class FwVolcengineApp:
             return str(e)
 
 
+    @utils.setup_logging(use_instance_name=True)
     def auto_block_task(self, addr, direction=None):
-        # 加载日志配置（支持实例名）
-        instance_name = getattr(self, 'asset', None) and getattr(self.asset, 'name', None)
-        utils.check_os_type(instance_name)
         
         # 验证direction参数
         if direction not in ['in', 'out']:
@@ -644,10 +628,8 @@ class FwVolcengineApp:
                 }
             }
 
+    @utils.setup_logging(use_instance_name=True)
     def auto_unblock_task(self, addr, direction=None):
-        # 加载日志配置（支持实例名）
-        instance_name = getattr(self, 'asset', None) and getattr(self.asset, 'name', None)
-        utils.check_os_type(instance_name)
         
         # 验证direction参数
         if direction not in ['in', 'out']:

@@ -5,56 +5,65 @@
 
 import os, ipaddress, yaml, platform
 from loguru import logger
+from functools import wraps
 
-def check_os_type(instance_name=None):
-    """检查系统类型并配置日志
+def setup_logging(use_instance_name=True):
+    """日志装饰器，自动配置日志系统
     
     Args:
-        instance_name: 应用实例名称，用于区分不同实例的日志文件
+        use_instance_name: True=使用应用名_实例名，False=仅使用应用名
     """
-    sysname = platform.system().lower()
-    logs_path = os.path.dirname(os.path.dirname(os.path.dirname(__file__))) + "/logs"
-    
-    # 获取应用ID（从文件路径中提取）
-    app_id = os.path.basename(os.path.dirname(__file__))
-    
-    # 构建日志文件名：app_id_实例名.log
-    if instance_name:
-        # 清理实例名：转换为小写，替换特殊字符为下划线
-        clean_instance_name = _clean_instance_name(instance_name)
-        log_filename = f"{app_id}_{clean_instance_name}.log"
-    else:
-        # 兼容旧版本：如果没有实例名，使用app_id.log
-        log_filename = f"{app_id}.log"
-    
-    logger.remove()
-    if sysname == 'linux':
-        logger.add(f'{logs_path}/{log_filename}', rotation='500MB')
-    elif sysname == 'darwin':
-        logger.add(f'{logs_path}/{log_filename}', rotation='500MB')
-    elif sysname == 'windows':
-        logger.add(f'{logs_path}/{log_filename}', rotation='500MB')
-
-
-def _clean_instance_name(instance_name):
-    """清理实例名称，转换为适合文件名的格式
-    
-    Args:
-        instance_name: 原始实例名称
-        
-    Returns:
-        清理后的实例名称（小写，特殊字符转为下划线）
-    """
-    import re
-    # 转换为小写
-    cleaned = instance_name.lower()
-    # 替换中文和特殊字符为下划线
-    cleaned = re.sub(r'[^\w\-_.]', '_', cleaned)
-    # 合并多个连续的下划线
-    cleaned = re.sub(r'_+', '_', cleaned)
-    # 去除首尾下划线
-    cleaned = cleaned.strip('_')
-    return cleaned or 'default'
+    def decorator(func):
+        @wraps(func)
+        def wrapper(self, *args, **kwargs):
+            try:
+                # 获取应用ID（从文件路径中提取）
+                current_dir = os.path.dirname(__file__)
+                src_dir = os.path.dirname(os.path.dirname(current_dir))
+                logs_path = os.path.join(src_dir, "logs")
+                
+                # 确保日志目录存在
+                os.makedirs(logs_path, exist_ok=True)
+                
+                app_id = os.path.basename(current_dir)
+                
+                # 构建日志文件名
+                if use_instance_name:
+                    # 尝试获取实例名
+                    instance_name = getattr(self, 'asset', None) and getattr(self.asset, 'name', None)
+                    if instance_name:
+                        log_filename = f"{app_id}_{instance_name}.log"
+                    else:
+                        log_filename = f"{app_id}.log"
+                else:
+                    log_filename = f"{app_id}.log"
+                
+                log_file_path = os.path.join(logs_path, log_filename)
+                
+                # 配置日志
+                logger.remove()
+                logger.add(
+                    log_file_path,
+                    rotation='500MB',
+                    encoding='utf-8',
+                    format="{time:YYYY-MM-DD HH:mm:ss.SSS} | {level} | {name}:{function}:{line} - {message}",
+                    level="INFO"
+                )
+                logger.info(f"日志配置完成: {log_file_path}")
+                
+            except Exception as e:
+                print(f"日志配置失败: {e}")
+                # 降级到控制台输出
+                logger.remove()
+                logger.add(
+                    lambda msg: print(msg, end=''),
+                    format="{time:YYYY-MM-DD HH:mm:ss.SSS} | {level} | {message}",
+                    level="INFO"
+                )
+            
+            return func(self, *args, **kwargs)
+        return wrapper
+    return decorator
 
 
 _config_cache = {}  # 配置缓存
